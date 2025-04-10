@@ -1,230 +1,208 @@
 
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
+import { useToast } from '@/hooks/use-toast';
 
-interface FormField {
+export interface FormField {
   type: string;
   name: string;
   label: string;
   placeholder: string;
   required?: boolean;
-  pattern?: string;
-  errorMessage?: string;
+  options?: { value: string; label: string }[];
 }
 
 interface AuthFormProps {
   title: string;
+  description?: string;
   fields: FormField[];
   buttonText: string;
   footerText?: string;
   footerLinkText?: string;
   footerLinkUrl?: string;
-  isSignUp?: boolean;
-  onSubmit: (data: Record<string, string>) => void;
+  onSubmit: (data: Record<string, any>) => void;
 }
 
 export function AuthForm({
   title,
+  description,
   fields,
   buttonText,
   footerText,
   footerLinkText,
   footerLinkUrl,
-  isSignUp = false,
   onSubmit,
 }: AuthFormProps) {
-  const isLaptop = useMediaQuery('(min-width: 768px)');
-  const [formData, setFormData] = useState<Record<string, string>>({});
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showPassword, setShowPassword] = useState(false);
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const [showPassword, setShowPassword] = React.useState(false);
+  const { toast } = useToast();
   const navigate = useNavigate();
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    
-    // Clear error when field is being edited
-    if (errors[name]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
+  
+  const form = useForm({
+    defaultValues: fields.reduce((acc, field) => {
+      acc[field.name] = '';
+      return acc;
+    }, {} as Record<string, any>),
+  });
+  
+  const handleSubmit = (data: Record<string, any>) => {
+    try {
+      onSubmit(data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
       });
     }
   };
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-    
-    fields.forEach((field) => {
-      const value = formData[field.name] || '';
-      
-      if (field.required && !value) {
-        newErrors[field.name] = `${field.label} is required`;
-      } else if (field.pattern && value) {
-        const regex = new RegExp(field.pattern);
-        if (!regex.test(value)) {
-          newErrors[field.name] = field.errorMessage || `Invalid ${field.label.toLowerCase()}`;
-        }
-      }
-    });
-    
-    // Password confirmation validation for sign up
-    if (isSignUp && formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (validateForm()) {
-      onSubmit(formData);
-      // Navigate based on user type after successful submission
-      // In a real app, this would happen after API call confirmation
-      const userType = formData.userType || 'participant';
-      setTimeout(() => {
-        navigate(userType === 'host' ? '/dashboard/host' : '/events');
-      }, 1000);
-    }
-  };
-
+  
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
   return (
-    <div className={`min-h-screen flex items-center justify-center p-4 ${isLaptop ? 'bg-gray-50 dark:bg-gray-900' : ''}`}>
-      <div 
-        className={`w-full ${isLaptop ? 'max-w-[500px] shadow-lg p-8' : 'max-w-[400px] p-6'} bg-white dark:bg-card rounded-xl`}
-        style={{
-          animation: isLaptop 
-            ? (isSignUp ? 'slide-in-left 0.5s ease-out forwards' : 'slide-in-right 0.5s ease-out forwards')
-            : 'fade-in 0.5s ease-out forwards'
-        }}
-      >
-        <h1 className="text-2xl font-bold mb-6 text-center">{title}</h1>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {fields.map((field) => (
-            <div key={field.name} className="space-y-1">
-              <label htmlFor={field.name} className="block text-sm font-medium">
-                {field.label}
-              </label>
-              
-              <div className="relative">
-                {field.type === 'password' ? (
-                  <>
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      id={field.name}
-                      name={field.name}
-                      placeholder={field.placeholder}
-                      value={formData[field.name] || ''}
-                      onChange={handleChange}
-                      className={`input-primary ${errors[field.name] ? 'border-red-500' : ''}`}
-                      required={field.required}
-                    />
-                    <button
-                      type="button"
-                      onClick={togglePasswordVisibility}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-5 w-5" />
+    <div className="flex min-h-screen items-center justify-center p-4 bg-background">
+      <Card className={`w-full ${isDesktop ? 'max-w-md' : 'max-w-xs'} shadow-lg animate-fade-in`}>
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">{title}</CardTitle>
+          {description && <CardDescription className="text-center">{description}</CardDescription>}
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              {fields.map((field) => (
+                <FormField
+                  key={field.name}
+                  control={form.control}
+                  name={field.name}
+                  render={({ field: formField }) => (
+                    <FormItem>
+                      <FormLabel>{field.label}</FormLabel>
+                      {field.type === 'password' ? (
+                        <div className="relative">
+                          <FormControl>
+                            <Input
+                              {...formField}
+                              type={showPassword ? 'text' : 'password'}
+                              placeholder={field.placeholder}
+                              required={field.required}
+                            />
+                          </FormControl>
+                          <button
+                            type="button"
+                            onClick={togglePasswordVisibility}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                      ) : field.type === 'select' && field.options ? (
+                        <Select 
+                          onValueChange={formField.onChange} 
+                          defaultValue={formField.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={field.placeholder} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {field.options.map(option => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : field.type === 'checkbox' ? (
+                        <FormControl>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id={field.name}
+                              checked={formField.value}
+                              onCheckedChange={formField.onChange}
+                            />
+                            <label
+                              htmlFor={field.name}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
+                              {field.placeholder}
+                            </label>
+                          </div>
+                        </FormControl>
                       ) : (
-                        <Eye className="h-5 w-5" />
+                        <FormControl>
+                          <Input
+                            {...formField}
+                            type={field.type}
+                            placeholder={field.placeholder}
+                            required={field.required}
+                          />
+                        </FormControl>
                       )}
-                    </button>
-                  </>
-                ) : field.type === 'select' ? (
-                  <select
-                    id={field.name}
-                    name={field.name}
-                    value={formData[field.name] || ''}
-                    onChange={handleChange}
-                    className={`input-primary ${errors[field.name] ? 'border-red-500' : ''}`}
-                    required={field.required}
-                  >
-                    <option value="">Select {field.label}</option>
-                    <option value="host">Host</option>
-                    <option value="participant">Participant</option>
-                  </select>
-                ) : (
-                  <input
-                    type={field.type}
-                    id={field.name}
-                    name={field.name}
-                    placeholder={field.placeholder}
-                    value={formData[field.name] || ''}
-                    onChange={handleChange}
-                    className={`input-primary ${errors[field.name] ? 'border-red-500' : ''}`}
-                    required={field.required}
-                    pattern={field.pattern}
-                  />
-                )}
-              </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ))}
               
-              {errors[field.name] && (
-                <p className="text-red-500 text-sm">{errors[field.name]}</p>
+              {/* Remember Me for Sign In (only include if it's a sign in form) */}
+              {fields.some(f => f.name === 'email') && fields.some(f => f.name === 'password') && !fields.some(f => f.name === 'name') && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox id="rememberMe" />
+                    <label
+                      htmlFor="rememberMe"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Remember me
+                    </label>
+                  </div>
+                  {!isDesktop && (
+                    <Link to="/forgot-password" className="text-xs text-primary hover:underline">
+                      Forgot Password?
+                    </Link>
+                  )}
+                </div>
               )}
-            </div>
-          ))}
-          
-          {/* Remember Me for Sign In */}
-          {!isSignUp && (
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="rememberMe"
-                name="rememberMe"
-                className="h-4 w-4 rounded border-gray-300 text-eventhive-primary focus:ring-eventhive-primary"
-                onChange={handleChange}
-              />
-              <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-600 dark:text-gray-400">
-                Remember me
-              </label>
               
-              {!isLaptop && (
-                <Link to="/forgot-password" className="ml-auto text-sm text-eventhive-accent hover:underline">
-                  Forgot Password?
-                </Link>
+              <Button type="submit" className="w-full">{buttonText}</Button>
+              
+              {isDesktop && fields.some(f => f.name === 'email') && fields.some(f => f.name === 'password') && !fields.some(f => f.name === 'name') && (
+                <div className="text-center">
+                  <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                    Forgot Password?
+                  </Link>
+                </div>
               )}
-            </div>
-          )}
-          
-          <div className={isLaptop ? 'flex items-center justify-between' : ''}>
-            <button
-              type="submit"
-              className={`btn-primary ${isLaptop ? 'w-auto min-w-[150px]' : 'w-full h-[50px]'}`}
-            >
-              {buttonText}
-            </button>
-            
-            {isLaptop && !isSignUp && (
-              <Link to="/forgot-password" className="text-eventhive-accent hover:underline text-sm">
-                Forgot Password?
-              </Link>
-            )}
-          </div>
-        </form>
-        
+            </form>
+          </Form>
+        </CardContent>
         {footerText && footerLinkText && footerLinkUrl && (
-          <div className={`mt-6 text-center ${isLaptop ? 'text-sm' : ''}`}>
-            <p className="text-gray-600 dark:text-gray-400">
+          <CardFooter className="flex justify-center">
+            <p className="text-sm text-muted-foreground">
               {footerText}{' '}
-              <Link to={footerLinkUrl} className="text-eventhive-accent hover:underline">
+              <Link to={footerLinkUrl} className="text-primary hover:underline">
                 {footerLinkText}
               </Link>
             </p>
-          </div>
+          </CardFooter>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

@@ -1,0 +1,126 @@
+
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { 
+  Home, Calendar, User, Award, 
+  Settings, BarChart, Ticket, 
+  Users, FileText, MessageSquare 
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+type UserRole = 'admin' | 'host' | 'participant' | 'guest';
+
+interface NavItem {
+  title: string;
+  icon: React.ElementType;
+  path: string;
+  roles: UserRole[];
+}
+
+export const navigationItems: NavItem[] = [
+  {
+    title: 'Home',
+    icon: Home,
+    path: '/',
+    roles: ['admin', 'host', 'participant', 'guest'],
+  },
+  {
+    title: 'Events',
+    icon: Calendar,
+    path: '/events',
+    roles: ['admin', 'host', 'participant', 'guest'],
+  },
+  {
+    title: 'Leaderboard',
+    icon: Award,
+    path: '/leaderboard',
+    roles: ['admin', 'host', 'participant', 'guest'],
+  },
+  {
+    title: 'Profile',
+    icon: User,
+    path: '/profile',
+    roles: ['admin', 'host', 'participant'],
+  },
+  {
+    title: 'Dashboard',
+    icon: BarChart,
+    path: '/dashboard',
+    roles: ['admin', 'host'],
+  },
+  {
+    title: 'Manage Events',
+    icon: Ticket,
+    path: '/manage-events',
+    roles: ['admin', 'host'],
+  },
+  {
+    title: 'Users',
+    icon: Users,
+    path: '/users',
+    roles: ['admin'],
+  },
+  {
+    title: 'Reports',
+    icon: FileText,
+    path: '/reports',
+    roles: ['admin'],
+  },
+  {
+    title: 'Messages',
+    icon: MessageSquare,
+    path: '/messages',
+    roles: ['admin', 'host', 'participant'],
+  },
+  {
+    title: 'Settings',
+    icon: Settings,
+    path: '/settings',
+    roles: ['admin', 'host', 'participant'],
+  },
+];
+
+interface RoleBasedNavigationProps {
+  userRole?: UserRole;
+  className?: string;
+  linkClassName?: (isActive: boolean) => string;
+}
+
+export function RoleBasedNavigation({ 
+  userRole = 'guest', 
+  className,
+  linkClassName 
+}: RoleBasedNavigationProps) {
+  const location = useLocation();
+  
+  // Filter navigation items by role
+  const filteredItems = navigationItems.filter(item => item.roles.includes(userRole));
+
+  // Default link class if not provided
+  const defaultLinkClass = (isActive: boolean) => {
+    const baseClass = "flex items-center p-3 rounded-md transition-colors";
+    return isActive
+      ? cn(baseClass, "bg-eventhive-primary text-white")
+      : cn(baseClass, "hover:bg-gray-100 dark:hover:bg-gray-800");
+  };
+
+  const getLinkClass = linkClassName || defaultLinkClass;
+
+  return (
+    <nav className={cn("flex flex-col space-y-1", className)}>
+      {filteredItems.map(item => {
+        const isActive = location.pathname === item.path;
+        return (
+          <Link 
+            key={item.path}
+            to={item.path} 
+            className={getLinkClass(isActive)}
+          >
+            <item.icon size={20} className="mr-3" />
+            <span>{item.title}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
