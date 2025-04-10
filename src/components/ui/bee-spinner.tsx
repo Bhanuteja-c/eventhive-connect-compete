@@ -28,12 +28,14 @@ export function BeeSpinner({ size = 'md', className }: BeeSpinnerProps) {
         <div className="absolute left-[-30%] top-[15%] w-[40%] h-[30%] bg-white rounded-full opacity-80 animate-[wing-flap_0.5s_ease-in-out_infinite]"></div>
         <div className="absolute right-[-30%] top-[15%] w-[40%] h-[30%] bg-white rounded-full opacity-80 animate-[wing-flap_0.5s_ease-in-out_infinite_0.1s]"></div>
       </div>
-      <style jsx>{`
-        @keyframes wing-flap {
-          0%, 100% { transform: rotate(-20deg) scaleY(1); }
-          50% { transform: rotate(20deg) scaleY(0.8); }
-        }
-      `}</style>
+      <style>
+        {`
+          @keyframes wing-flap {
+            0%, 100% { transform: rotate(-20deg) scaleY(1); }
+            50% { transform: rotate(20deg) scaleY(0.8); }
+          }
+        `}
+      </style>
     </div>
   );
 }
