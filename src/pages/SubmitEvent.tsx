@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -11,13 +11,20 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { useForm } from 'react-hook-form';
-import { CalendarIcon, Upload } from 'lucide-react';
+import { CalendarIcon, Upload, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
+import { BeeSpinner } from '@/components/ui/bee-spinner';
 
 export default function SubmitEvent() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
   
   const form = useForm({
     defaultValues: {
@@ -29,12 +36,73 @@ export default function SubmitEvent() {
     },
   });
   
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      
+      // Create a preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
   const onSubmit = async (data: any) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to submit an event.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     
     try {
-      // Simulate API call for event submission
-      console.log('Event submitted for approval:', data);
+      let imageUrl = null;
+      
+      // Upload image if one was selected
+      if (imageFile) {
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('event-images')
+          .upload(filePath, imageFile);
+        
+        if (uploadError) {
+          throw new Error(`Image upload failed: ${uploadError.message}`);
+        }
+        
+        // Get the public URL
+        const { data: publicUrlData } = supabase.storage
+          .from('event-images')
+          .getPublicUrl(filePath);
+          
+        imageUrl = publicUrlData.publicUrl;
+      }
+      
+      // Save event to database
+      const { error: eventError } = await supabase
+        .from('events')
+        .insert({
+          title: data.title,
+          description: data.description,
+          date: data.date.toISOString(),
+          location: data.location,
+          criteria: data.criteria,
+          image_url: imageUrl,
+          user_id: user.id,
+        });
+      
+      if (eventError) {
+        throw new Error(`Failed to submit event: ${eventError.message}`);
+      }
       
       // Show success toast
       toast({
@@ -47,9 +115,10 @@ export default function SubmitEvent() {
         navigate('/manage-events');
       }, 1500);
     } catch (error) {
+      console.error('Error submitting event:', error);
       toast({
         title: 'Error',
-        description: 'Failed to submit event. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to submit event. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -179,23 +248,71 @@ export default function SubmitEvent() {
               />
               
               <div>
-                <FormLabel>Event Banner (Optional)</FormLabel>
-                <div className="mt-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-6 text-center">
-                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                  <div className="mt-2">
-                    <Button type="button" variant="outline" size="sm">
-                      Choose file
-                    </Button>
-                  </div>
-                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    PNG, JPG or GIF up to 10MB
-                  </p>
+                <FormLabel htmlFor="event-image">Event Banner (Optional)</FormLabel>
+                <input
+                  id="event-image"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  ref={fileInputRef}
+                  className="hidden"
+                />
+                
+                <div 
+                  className={cn(
+                    "mt-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-6 text-center",
+                    imagePreview ? "bg-gray-50 dark:bg-gray-800/50" : ""
+                  )}
+                >
+                  {imagePreview ? (
+                    <div className="space-y-2">
+                      <img src={imagePreview} alt="Preview" className="mx-auto h-40 object-cover rounded-md" />
+                      <div>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setImageFile(null);
+                            setImagePreview(null);
+                            if (fileInputRef.current) fileInputRef.current.value = '';
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                      <div className="mt-2">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          Choose file
+                        </Button>
+                      </div>
+                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        PNG, JPG, GIF or WEBP up to 5MB
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
               
               <div className="pt-4 border-t">
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Submitting...' : 'Submit Event for Approval'}
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    'Submit Event for Approval'
+                  )}
                 </Button>
               </div>
             </form>
