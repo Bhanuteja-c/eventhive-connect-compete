@@ -64,12 +64,12 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				eventhive: {
-					primary: '#9b87f5',
-					secondary: '#7E69AB',
-					dark: '#1A1F2C',
-					light: '#D6BCFA',
-					accent: '#1EAEDB',
-					'accent-light': '#E5DEFF',
+					primary: '#F97316', // Changed to orange
+					secondary: '#333333', // Changed to dark gray
+					dark: '#000000', // Changed to black
+					light: '#FFFFFF', // Changed to white
+					accent: '#F97316', // Changed to orange
+					'accent-light': '#FFF7ED', // Light orange
 				}
 			},
 			borderRadius: {
@@ -123,6 +123,22 @@ export default {
 						opacity: '1',
 						transform: 'translateX(0)'
 					}
+				},
+				'wing-flap': {
+					'0%, 100%': { 
+						transform: 'rotate(-20deg) scaleY(1)' 
+					},
+					'50%': { 
+						transform: 'rotate(20deg) scaleY(0.8)' 
+					}
+				},
+				'bee-float': {
+					'0%, 100%': { 
+						transform: 'translateY(0)' 
+					},
+					'50%': { 
+						transform: 'translateY(-5px)' 
+					}
 				}
 			},
 			animation: {
@@ -130,7 +146,9 @@ export default {
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.5s ease-out forwards',
 				'slide-in-left': 'slide-in-left 0.5s ease-out forwards',
-				'slide-in-right': 'slide-in-right 0.5s ease-out forwards'
+				'slide-in-right': 'slide-in-right 0.5s ease-out forwards',
+				'wing-flap': 'wing-flap 0.5s ease-in-out infinite',
+				'bee-float': 'bee-float 2s ease-in-out infinite'
 			}
 		}
 	},

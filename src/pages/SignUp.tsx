@@ -3,6 +3,7 @@ import { AuthForm } from '@/components/ui/AuthForm';
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
+import { BeeLoading } from '@/components/ui/bee-spinner';
 
 export default function SignUp() {
   const { signup, isAuthenticated, user } = useAuth();
@@ -85,13 +86,21 @@ export default function SignUp() {
       ]
     }
   ];
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <BeeLoading message="Creating your account..." size="lg" />
+      </div>
+    );
+  }
 
   return (
     <AuthForm
       title="Create an Account"
       description="Sign up to start hosting or participating in events"
       fields={signUpFields}
-      buttonText={loading ? "Creating Account..." : "Sign Up"}
+      buttonText="Sign Up"
       footerText="Already have an account?"
       footerLinkText="Sign in"
       footerLinkUrl="/signin"
