@@ -1,20 +1,17 @@
 
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { LogIn, LogOut, Menu, UserPlus, X } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useLocation } from 'react-router-dom';
 import { RoleBasedNavigation } from './RoleBasedNavigation';
-
-// Mock user data - in a real app, this would come from auth context
-const mockUser = {
-  role: 'participant', // 'admin', 'host', 'participant', or undefined for guest
-  isAuthenticated: false
-};
+import { useAuth } from '@/context/AuthContext';
+import { Button } from '@/components/ui/button';
 
 export function MobileNavbar() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { user, isAuthenticated, logout } = useAuth();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -53,7 +50,7 @@ export function MobileNavbar() {
         <div className="absolute top-[56px] left-0 right-0 bg-sidebar dark:bg-sidebar shadow-md z-50 animate-fade-in">
           <div className="px-4 py-2 space-y-1">
             <RoleBasedNavigation 
-              userRole={mockUser.isAuthenticated ? mockUser.role as any : 'guest'} 
+              userRole={isAuthenticated && user ? user.role : 'guest'} 
               linkClassName={(isActive) => {
                 return `flex items-center p-3 rounded-md ${
                   isActive 
@@ -67,7 +64,7 @@ export function MobileNavbar() {
               <ThemeToggle />
             </div>
             
-            {!mockUser.isAuthenticated && (
+            {!isAuthenticated ? (
               <div className="border-t border-sidebar-border dark:border-sidebar-border pt-2 mt-2 space-y-1">
                 <Link
                   to="/signin"
@@ -83,6 +80,22 @@ export function MobileNavbar() {
                 >
                   Sign Up
                 </Link>
+              </div>
+            ) : (
+              <div className="border-t border-sidebar-border dark:border-sidebar-border pt-2 mt-2">
+                <div className="mb-3 px-3">
+                  <p className="text-sm font-medium">Signed in as:</p>
+                  <p className="text-sm text-muted-foreground truncate">{user?.name}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                  onClick={() => { logout(); closeMenu(); }}
+                >
+                  <LogOut size={18} className="mr-2" />
+                  Sign Out
+                </Button>
               </div>
             )}
           </div>

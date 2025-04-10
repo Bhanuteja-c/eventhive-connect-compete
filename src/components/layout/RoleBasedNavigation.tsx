@@ -4,11 +4,11 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   Home, Calendar, User, Award, 
   Settings, BarChart, Ticket, 
-  Users, FileText, MessageSquare 
+  Users, FileText, MessageSquare,
+  PlusCircle, ClipboardCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-type UserRole = 'admin' | 'host' | 'participant' | 'guest';
+import { UserRole } from '@/context/AuthContext';
 
 interface NavItem {
   title: string;
@@ -46,13 +46,25 @@ export const navigationItems: NavItem[] = [
     title: 'Dashboard',
     icon: BarChart,
     path: '/dashboard',
-    roles: ['admin', 'host'],
+    roles: ['admin'],
   },
   {
     title: 'Manage Events',
     icon: Ticket,
     path: '/manage-events',
     roles: ['admin', 'host'],
+  },
+  {
+    title: 'Submit Event',
+    icon: PlusCircle,
+    path: '/submit-event',
+    roles: ['host'],
+  },
+  {
+    title: 'Pending Approvals',
+    icon: ClipboardCheck,
+    path: '/pending-events',
+    roles: ['admin'],
   },
   {
     title: 'Users',

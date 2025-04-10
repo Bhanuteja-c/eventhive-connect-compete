@@ -1,18 +1,15 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LogIn, UserPlus } from 'lucide-react';
+import { LogIn, LogOut, UserPlus } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { RoleBasedNavigation } from './RoleBasedNavigation';
-
-// Mock user data - in a real app, this would come from auth context
-const mockUser = {
-  role: 'participant', // 'admin', 'host', 'participant', or undefined for guest
-  isAuthenticated: false
-};
+import { useAuth } from '@/context/AuthContext';
+import { Button } from '@/components/ui/button';
 
 export function Sidebar() {
   const location = useLocation();
+  const { user, isAuthenticated, logout } = useAuth();
   
   // Check if on auth page
   const isAuthPage = location.pathname.includes('/signin') || location.pathname.includes('/signup');
@@ -26,7 +23,7 @@ export function Sidebar() {
       </div>
 
       <RoleBasedNavigation 
-        userRole={mockUser.isAuthenticated ? mockUser.role as any : 'guest'} 
+        userRole={isAuthenticated && user ? user.role : 'guest'} 
         className="flex-1"
       />
 
@@ -35,7 +32,7 @@ export function Sidebar() {
           <ThemeToggle />
         </div>
         
-        {!mockUser.isAuthenticated && !isAuthPage && (
+        {!isAuthenticated && !isAuthPage ? (
           <div className="space-y-2">
             <Link to="/signin" className="flex items-center p-3 rounded-md bg-eventhive-primary text-white">
               <LogIn size={20} className="mr-3" />
@@ -45,6 +42,22 @@ export function Sidebar() {
               <UserPlus size={20} className="mr-3" />
               <span>Sign Up</span>
             </Link>
+          </div>
+        ) : isAuthenticated && (
+          <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+            <div className="mb-3 px-3">
+              <p className="text-sm font-medium">Signed in as:</p>
+              <p className="text-sm text-muted-foreground truncate">{user?.name}</p>
+              <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
+            </div>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+              onClick={logout}
+            >
+              <LogOut size={18} className="mr-2" />
+              Sign Out
+            </Button>
           </div>
         )}
       </div>

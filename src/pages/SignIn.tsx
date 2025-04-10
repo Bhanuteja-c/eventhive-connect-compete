@@ -1,27 +1,31 @@
 
 import { AuthForm } from '@/components/ui/AuthForm';
-import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 
 export default function SignIn() {
-  const { toast } = useToast();
-  const navigate = useNavigate();
+  const { login, isAuthenticated, user } = useAuth();
+  const [loading, setLoading] = useState(false);
   
-  const handleSignIn = (data: Record<string, any>) => {
-    console.log('Sign in submitted:', data);
-    
-    // In a real app, you would make an API call to authenticate
-    // Simulate a successful login for demonstration
-    toast({
-      title: 'Signed in successfully',
-      description: `Welcome back, ${data.email}!`,
-    });
-    
-    // Redirect based on role (in a real app, this would come from the server response)
-    // For demo purposes, redirect to events page after a short delay
-    setTimeout(() => {
-      navigate('/events');
-    }, 1000);
+  // If already authenticated, redirect based on role
+  if (isAuthenticated && user) {
+    if (user.role === 'admin') {
+      return <Navigate to="/dashboard" replace />;
+    } else if (user.role === 'host') {
+      return <Navigate to="/manage-events" replace />;
+    } else {
+      return <Navigate to="/events" replace />;
+    }
+  }
+  
+  const handleSignIn = async (data: Record<string, any>) => {
+    setLoading(true);
+    try {
+      await login(data.email, data.password);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signInFields = [
@@ -46,7 +50,7 @@ export default function SignIn() {
       title="Sign In to EventHive"
       description="Enter your email and password to access your account"
       fields={signInFields}
-      buttonText="Sign In"
+      buttonText={loading ? "Signing In..." : "Sign In"}
       footerText="Need an account?"
       footerLinkText="Sign up"
       footerLinkUrl="/signup"

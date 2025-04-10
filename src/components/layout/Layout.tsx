@@ -3,6 +3,7 @@ import React from 'react';
 import { MobileNavbar } from './MobileNavbar';
 import { Sidebar } from './Sidebar';
 import { useLocation } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,6 +11,7 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
   
   // Check if we're on an auth page
   const isAuthPage = location.pathname.includes('/signin') || location.pathname.includes('/signup');

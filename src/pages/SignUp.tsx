@@ -1,33 +1,46 @@
 
 import { AuthForm } from '@/components/ui/AuthForm';
-import { useToast } from '@/hooks/use-toast';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import { useState } from 'react';
+import { Navigate, useSearchParams } from 'react-router-dom';
 
 export default function SignUp() {
-  const { toast } = useToast();
-  const navigate = useNavigate();
+  const { signup, isAuthenticated, user } = useAuth();
+  const [loading, setLoading] = useState(false);
   const [searchParams] = useSearchParams();
   const userType = searchParams.get('type') || 'participant';
   
-  const handleSignUp = (data: Record<string, any>) => {
-    console.log('Sign up submitted:', data);
+  // If already authenticated, redirect based on role
+  if (isAuthenticated && user) {
+    if (user.role === 'admin') {
+      return <Navigate to="/dashboard" replace />;
+    } else if (user.role === 'host') {
+      return <Navigate to="/manage-events" replace />;
+    } else {
+      return <Navigate to="/events" replace />;
+    }
+  }
+  
+  const handleSignUp = async (data: Record<string, any>) => {
+    setLoading(true);
     
-    // In a real app, you would make an API call to register
-    toast({
-      title: 'Account created successfully',
-      description: `Welcome to EventHive, ${data.name}!`,
-    });
+    // Validate password match
+    if (data.password !== data.confirmPassword) {
+      alert('Passwords do not match');
+      setLoading(false);
+      return;
+    }
     
-    // Redirect based on user type
-    setTimeout(() => {
-      if (data.userType === 'host') {
-        navigate('/manage-events');
-      } else if (data.userType === 'admin') {
-        navigate('/dashboard');
-      } else {
-        navigate('/events');
-      }
-    }, 1000);
+    try {
+      await signup({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        userType: data.userType,
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signUpFields = [
@@ -78,7 +91,7 @@ export default function SignUp() {
       title="Create an Account"
       description="Sign up to start hosting or participating in events"
       fields={signUpFields}
-      buttonText="Sign Up"
+      buttonText={loading ? "Creating Account..." : "Sign Up"}
       footerText="Already have an account?"
       footerLinkText="Sign in"
       footerLinkUrl="/signin"
