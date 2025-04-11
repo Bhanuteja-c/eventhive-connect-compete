@@ -5,7 +5,7 @@ import {
   Home, Calendar, User, Award, 
   Settings, BarChart, Ticket, 
   Users, FileText, MessageSquare,
-  PlusCircle, ClipboardCheck
+  PlusCircle, ClipboardCheck, Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserRole } from '@/context/AuthContext';
@@ -46,6 +46,12 @@ export const navigationItems: NavItem[] = [
     title: 'Dashboard',
     icon: BarChart,
     path: '/dashboard',
+    roles: ['admin'],
+  },
+  {
+    title: 'Admin Dashboard',
+    icon: Shield,
+    path: '/admin',
     roles: ['admin'],
   },
   {
