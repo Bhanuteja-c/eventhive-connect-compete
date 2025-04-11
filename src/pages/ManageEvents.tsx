@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,8 +7,9 @@ import { Plus, Edit, Trash2, Eye, Award, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { BeeLoading } from '@/components/ui/bee-spinner';
+import { LoadingState } from '@/components/ui/loading-state';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { format } from 'date-fns';
 
 interface Event {
   id: string;
@@ -25,6 +27,7 @@ export default function ManageEvents() {
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [viewEvent, setViewEvent] = useState<Event | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -43,7 +46,8 @@ export default function ManageEvents() {
       const { data, error } = await supabase
         .from('events')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
       if (error) {
         throw error;
@@ -53,11 +57,7 @@ export default function ManageEvents() {
         // Format date for display
         const formattedEvents = data.map(event => ({
           ...event,
-          date: new Date(event.date).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })
+          date: format(new Date(event.date), 'PPP')
         }));
         setEvents(formattedEvents);
       }
@@ -75,6 +75,18 @@ export default function ManageEvents() {
 
   const handleCreateEvent = () => {
     navigate('/submit-event');
+  };
+
+  const handleEditEvent = (id: string) => {
+    // For future enhancement - edit event functionality
+    toast({
+      title: 'Edit functionality',
+      description: 'Edit functionality will be available soon.',
+    });
+  };
+
+  const handleViewEvent = (event: Event) => {
+    setViewEvent(event);
   };
 
   const handleDeleteEvent = async () => {
@@ -125,7 +137,7 @@ export default function ManageEvents() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-[60vh]">
-        <BeeLoading message="Loading events..." />
+        <LoadingState variant="spinner" text="Loading events..." size="lg" />
       </div>
     );
   }
@@ -155,7 +167,7 @@ export default function ManageEvents() {
                   />
                 </div>
               ) : (
-                <div className="h-40 bg-gradient-to-r from-eventhive-primary to-eventhive-secondary flex items-center justify-center">
+                <div className="h-40 bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
                   <span className="text-4xl font-bold text-white">{event.title.charAt(0)}</span>
                 </div>
               )}
@@ -179,13 +191,78 @@ export default function ManageEvents() {
               </CardContent>
               <CardFooter className="border-t bg-muted/50 px-6 py-3">
                 <div className="flex space-x-2 w-full">
-                  <Button variant="outline" size="sm" className="flex-1">
-                    <Eye className="h-4 w-4 mr-1" /> View
-                  </Button>
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => handleViewEvent(event)}
+                      >
+                        <Eye className="h-4 w-4 mr-1" /> View
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-3xl">
+                      <DialogHeader>
+                        <DialogTitle>Event Details</DialogTitle>
+                      </DialogHeader>
+                      {viewEvent && (
+                        <div className="mt-4 space-y-6">
+                          {viewEvent.image_url && (
+                            <div className="mb-4 max-h-[300px] overflow-hidden rounded-md">
+                              <img 
+                                src={viewEvent.image_url} 
+                                alt={viewEvent.title}
+                                className="w-full object-cover" 
+                              />
+                            </div>
+                          )}
+                          <div className="grid gap-4">
+                            <div>
+                              <h3 className="text-lg font-semibold">{viewEvent.title}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {viewEvent.date} • {viewEvent.location}
+                              </p>
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-medium">Description</h4>
+                              <p className="text-sm mt-1">{viewEvent.description}</p>
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-medium">Status</h4>
+                              <span className={`text-xs px-2 py-1 rounded-full capitalize ${getStatusBadgeClass(viewEvent.status)}`}>
+                                {viewEvent.status}
+                              </span>
+                              {viewEvent.status === 'pending' && (
+                                <p className="text-sm mt-1 text-muted-foreground">
+                                  Your event is under review by administrators.
+                                </p>
+                              )}
+                              {viewEvent.status === 'rejected' && (
+                                <p className="text-sm mt-1 text-muted-foreground">
+                                  Your event was not approved. Please create a new event with updated information.
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </DialogContent>
+                  </Dialog>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => handleEditEvent(event.id)}
+                  >
                     <Edit className="h-4 w-4 mr-1" /> Edit
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    disabled={event.status !== 'approved'}
+                  >
                     <Award className="h-4 w-4 mr-1" /> Leaderboard
                   </Button>
                   <Dialog>

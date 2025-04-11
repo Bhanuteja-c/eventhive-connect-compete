@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Check, X, Eye, Loader2 } from 'lucide-react';
-import { BeeLoading } from '@/components/ui/bee-spinner';
+import { LoadingState } from '@/components/ui/loading-state';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 
@@ -20,6 +20,7 @@ interface Event {
   criteria?: string;
   status: string;
   created_at: string;
+  user_id: string;
 }
 
 export default function PendingEvents() {
@@ -45,6 +46,8 @@ export default function PendingEvents() {
       if (error) {
         throw error;
       }
+
+      console.log('Pending events data:', data);
 
       if (data) {
         // Format dates for display
@@ -95,6 +98,7 @@ export default function PendingEvents() {
       });
     } finally {
       setActionLoading(null);
+      setSelectedEvent(null);
     }
   };
 
@@ -105,7 +109,11 @@ export default function PendingEvents() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-[60vh]">
-        <BeeLoading message="Loading pending events..." />
+        <LoadingState 
+          variant="spinner" 
+          text="Loading pending events..." 
+          size="lg" 
+        />
       </div>
     );
   }

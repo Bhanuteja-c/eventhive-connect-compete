@@ -15,7 +15,26 @@ import { CalendarIcon, Upload, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { BeeSpinner } from '@/components/ui/bee-spinner';
+import { LoadingState } from '@/components/ui/loading-state';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
+// Define form validation schema
+const formSchema = z.object({
+  title: z.string().min(3, {
+    message: "Title must be at least 3 characters.",
+  }),
+  description: z.string().min(10, {
+    message: "Description must be at least 10 characters.",
+  }),
+  date: z.date({
+    required_error: "Event date is required.",
+  }),
+  location: z.string().min(3, {
+    message: "Location must be at least 3 characters.",
+  }),
+  criteria: z.string().optional(),
+});
 
 export default function SubmitEvent() {
   const { toast } = useToast();
@@ -26,7 +45,8 @@ export default function SubmitEvent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   
-  const form = useForm({
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
       description: '',
@@ -50,7 +70,7 @@ export default function SubmitEvent() {
     }
   };
   
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
     if (!user) {
       toast({
         title: "Authentication required",
@@ -70,6 +90,18 @@ export default function SubmitEvent() {
         const fileExt = imageFile.name.split('.').pop();
         const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
         const filePath = `${fileName}`;
+        
+        // Check if event-images bucket exists, create if not
+        const { data: buckets } = await supabase.storage.listBuckets();
+        if (!buckets?.some(bucket => bucket.name === 'event-images')) {
+          const { error: bucketError } = await supabase.storage.createBucket('event-images', {
+            public: true
+          });
+          
+          if (bucketError) {
+            console.error('Error creating bucket:', bucketError);
+          }
+        }
         
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('event-images')
@@ -95,9 +127,11 @@ export default function SubmitEvent() {
           description: data.description,
           date: data.date.toISOString(),
           location: data.location,
-          criteria: data.criteria,
+          criteria: data.criteria || null,
           image_url: imageUrl,
           user_id: user.id,
+          status: 'pending',
+          participants: 0
         });
       
       if (eventError) {
@@ -113,7 +147,7 @@ export default function SubmitEvent() {
       // Redirect to manage events
       setTimeout(() => {
         navigate('/manage-events');
-      }, 1500);
+      }, 1000);
     } catch (error) {
       console.error('Error submitting event:', error);
       toast({
