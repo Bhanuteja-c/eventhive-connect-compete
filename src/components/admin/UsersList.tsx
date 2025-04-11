@@ -16,6 +16,7 @@ interface ProfileData {
   updated_at: string | null;
 }
 
+// Define the Supabase role type to match database values
 type SupabaseRole = 'admin' | 'host' | 'user';
 
 interface RoleData {
@@ -66,6 +67,7 @@ export function UsersList() {
           const supabaseRole = userRoleData.role;
           if (supabaseRole === 'admin') userRole = 'admin';
           else if (supabaseRole === 'host') userRole = 'host';
+          // Supabase 'user' role maps to 'participant' in our app
         }
         
         const email = `user-${profile.id.substring(0, 6)}@example.com`;
