@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -16,10 +15,12 @@ interface ProfileData {
   updated_at: string | null;
 }
 
+type SupabaseRole = 'admin' | 'host' | 'user';
+
 interface RoleData {
   id: string;
   user_id: string;
-  role: UserRole;
+  role: SupabaseRole;
   created_at: string | null;
 }
 
@@ -44,25 +45,28 @@ export function UsersList() {
     try {
       setLoading(true);
       
-      // First get all profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*');
 
       if (profilesError) throw profilesError;
 
-      // Then get all roles
       const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
         .select('*');
 
       if (rolesError) throw rolesError;
 
-      // Create a combined user list
       const userList = profiles?.map((profile: ProfileData) => {
-        const userRole = roles?.find((r: RoleData) => r.user_id === profile.id)?.role || 'participant';
+        const userRoleData = roles?.find((r: { user_id: string }) => r.user_id === profile.id);
         
-        // In a real app, we'd get this from Auth, but for this demo:
+        let userRole: UserRole = 'participant';
+        if (userRoleData) {
+          const supabaseRole = userRoleData.role as SupabaseRole;
+          if (supabaseRole === 'admin') userRole = 'admin';
+          else if (supabaseRole === 'host') userRole = 'host';
+        }
+        
         const email = `user-${profile.id.substring(0, 6)}@example.com`;
         
         return {
@@ -71,7 +75,7 @@ export function UsersList() {
           email,
           created_at: profile.created_at,
           avatar_url: profile.avatar_url,
-          role: userRole as UserRole
+          role: userRole
         };
       }) || [];
 
