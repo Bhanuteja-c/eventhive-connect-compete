@@ -51,7 +51,7 @@ export default function PendingEvents() {
         const formattedEvents = data.map(event => ({
           ...event,
           date: new Date(event.date).toISOString(),
-          created_at: new Date(event.created_at).toISOString()
+          created_at: new Date(event.created_at || Date.now()).toISOString()
         }));
         setEvents(formattedEvents);
       }
