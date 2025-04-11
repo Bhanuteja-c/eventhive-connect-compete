@@ -8,6 +8,21 @@ import { BeeLoading } from '@/components/ui/bee-spinner';
 import { UserRole } from '@/context/AuthContext';
 import { format } from 'date-fns';
 
+interface ProfileData {
+  id: string;
+  full_name: string | null;
+  created_at: string | null;
+  avatar_url: string | null;
+  updated_at: string | null;
+}
+
+interface RoleData {
+  id: string;
+  user_id: string;
+  role: UserRole;
+  created_at: string | null;
+}
+
 interface UserData {
   id: string;
   full_name: string | null;
@@ -43,12 +58,9 @@ export function UsersList() {
 
       if (rolesError) throw rolesError;
 
-      // Get all users from auth (this will be mock data in our case)
-      // In a real app with Supabase auth, we would get this from the profiles table
-
       // Create a combined user list
-      const userList = profiles?.map(profile => {
-        const userRole = roles?.find(r => r.user_id === profile.id)?.role || 'participant';
+      const userList = profiles?.map((profile: ProfileData) => {
+        const userRole = roles?.find((r: RoleData) => r.user_id === profile.id)?.role || 'participant';
         
         // In a real app, we'd get this from Auth, but for this demo:
         const email = `user-${profile.id.substring(0, 6)}@example.com`;
