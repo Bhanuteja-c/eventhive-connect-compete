@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -58,11 +59,11 @@ export function UsersList() {
       if (rolesError) throw rolesError;
 
       const userList = profiles?.map((profile: ProfileData) => {
-        const userRoleData = roles?.find((r: { user_id: string }) => r.user_id === profile.id);
+        const userRoleData = roles?.find((r: RoleData) => r.user_id === profile.id);
         
         let userRole: UserRole = 'participant';
         if (userRoleData) {
-          const supabaseRole = userRoleData.role as SupabaseRole;
+          const supabaseRole = userRoleData.role;
           if (supabaseRole === 'admin') userRole = 'admin';
           else if (supabaseRole === 'host') userRole = 'host';
         }
