@@ -3,7 +3,7 @@ import { AuthForm } from '@/components/ui/AuthForm';
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { BeeLoading } from '@/components/ui/bee-spinner';
+import { LoadingState } from '@/components/ui/loading-state';
 
 export default function SignIn() {
   const { login, isAuthenticated, user } = useAuth();
@@ -48,8 +48,15 @@ export default function SignIn() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <BeeLoading message="Signing in..." size="lg" />
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="w-full max-w-md p-8 space-y-4 bg-card rounded-lg shadow-md">
+          <LoadingState 
+            variant="spinner" 
+            text="Signing in..." 
+            size="lg" 
+            className="py-12" 
+          />
+        </div>
       </div>
     );
   }

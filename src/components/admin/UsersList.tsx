@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { BeeLoading } from '@/components/ui/bee-spinner';
+import { LoadingState } from '@/components/ui/loading-state';
 import { UserRole } from '@/context/AuthContext';
 import { format } from 'date-fns';
 
@@ -102,7 +102,22 @@ export function UsersList() {
   };
 
   if (loading) {
-    return <BeeLoading message="Loading users..." />;
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>All Users</CardTitle>
+          <CardDescription>Manage and view all users in the system</CardDescription>
+        </CardHeader>
+        <CardContent className="flex justify-center py-8">
+          <LoadingState 
+            variant="skeleton" 
+            count={5} 
+            size="md" 
+            text="Loading users data..." 
+          />
+        </CardContent>
+      </Card>
+    );
   }
 
   return (

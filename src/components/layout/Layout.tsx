@@ -4,7 +4,7 @@ import { MobileNavbar } from './MobileNavbar';
 import { Sidebar } from './Sidebar';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { BeeLoading } from '@/components/ui/bee-spinner';
+import { LoadingState } from '@/components/ui/loading-state';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,7 +12,11 @@ interface LayoutProps {
 
 const PageLoader = () => (
   <div className="flex justify-center items-center h-full min-h-[50vh]">
-    <BeeLoading message="Buzzing things up..." size="lg" />
+    <LoadingState 
+      variant="spinner" 
+      text="Loading page content..." 
+      size="lg" 
+    />
   </div>
 );
 
