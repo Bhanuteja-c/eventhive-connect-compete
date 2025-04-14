@@ -2,9 +2,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 // Define user roles
-export type UserRole = 'admin' | 'host' | 'participant' | 'guest';
+export type UserRole = 'admin' | 'host' | 'user' | 'guest';
 
 // Define user type
 export interface User {
@@ -44,11 +45,21 @@ const AuthContext = createContext<AuthContextType>({
 // Hook for using the auth context
 export const useAuth = () => useContext(AuthContext);
 
+// Function to map from Supabase roles to frontend roles
+const mapRole = (role: string): UserRole => {
+  switch(role) {
+    case 'admin': return 'admin';
+    case 'host': return 'host';
+    case 'user': return 'user';
+    default: return 'guest';
+  }
+};
+
 // Mock users for demonstration
 const mockUsers = [
   { id: '1', name: 'Admin User', email: 'admin@eventhive.com', password: 'password', role: 'admin' as UserRole },
   { id: '2', name: 'Host User', email: 'host@eventhive.com', password: 'password', role: 'host' as UserRole },
-  { id: '3', name: 'Participant User', email: 'user@eventhive.com', password: 'password', role: 'participant' as UserRole },
+  { id: '3', name: 'Participant User', email: 'user@eventhive.com', password: 'password', role: 'user' as UserRole },
 ];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -125,12 +136,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Email already in use');
       }
       
+      // Map participant role to user for consistency
+      let role = userData.userType as UserRole;
+      if (role === 'participant') {
+        role = 'user';
+      }
+      
       // Create new user
       const newUser: User = {
         id: `${mockUsers.length + 1}`,
         name: userData.name,
         email: userData.email,
-        role: userData.userType as UserRole,
+        role: role,
       };
       
       // In a real app, we would save this to the database

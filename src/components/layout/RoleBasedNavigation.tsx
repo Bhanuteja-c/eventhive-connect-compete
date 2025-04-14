@@ -22,25 +22,25 @@ export const navigationItems: NavItem[] = [
     title: 'Home',
     icon: Home,
     path: '/',
-    roles: ['admin', 'host', 'participant', 'guest'],
+    roles: ['admin', 'host', 'user', 'guest'],
   },
   {
     title: 'Events',
     icon: Calendar,
     path: '/events',
-    roles: ['admin', 'host', 'participant', 'guest'],
+    roles: ['admin', 'host', 'user', 'guest'],
   },
   {
     title: 'Leaderboard',
     icon: Award,
     path: '/leaderboard',
-    roles: ['admin', 'host', 'participant', 'guest'],
+    roles: ['admin', 'host', 'user', 'guest'],
   },
   {
     title: 'Profile',
     icon: User,
     path: '/profile',
-    roles: ['admin', 'host', 'participant'],
+    roles: ['admin', 'host', 'user'],
   },
   {
     title: 'Dashboard',
@@ -88,13 +88,13 @@ export const navigationItems: NavItem[] = [
     title: 'Messages',
     icon: MessageSquare,
     path: '/messages',
-    roles: ['admin', 'host', 'participant'],
+    roles: ['admin', 'host', 'user'],
   },
   {
     title: 'Settings',
     icon: Settings,
     path: '/settings',
-    roles: ['admin', 'host', 'participant'],
+    roles: ['admin', 'host', 'user'],
   },
 ];
 

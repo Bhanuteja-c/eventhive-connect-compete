@@ -9,7 +9,7 @@ export default function SignUp() {
   const { signup, isAuthenticated, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [searchParams] = useSearchParams();
-  const userType = searchParams.get('type') || 'participant';
+  const userType = searchParams.get('type') || 'user';
   
   // If already authenticated, redirect based on role
   if (isAuthenticated && user) {
@@ -81,7 +81,7 @@ export default function SignUp() {
       required: true,
       options: [
         { value: 'host', label: 'Host' },
-        { value: 'participant', label: 'Participant' },
+        { value: 'user', label: 'Participant' },
         { value: 'admin', label: 'Administrator' }
       ]
     }

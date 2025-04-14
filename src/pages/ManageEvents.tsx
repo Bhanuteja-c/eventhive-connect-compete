@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Edit, Trash2, Eye, Award, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Award, Loader2, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -87,6 +87,10 @@ export default function ManageEvents() {
 
   const handleViewEvent = (event: Event) => {
     setViewEvent(event);
+  };
+
+  const handleManageAttendance = (eventId: string) => {
+    navigate(`/manage-attendance/${eventId}`);
   };
 
   const handleDeleteEvent = async () => {
@@ -262,8 +266,9 @@ export default function ManageEvents() {
                     size="sm" 
                     className="flex-1"
                     disabled={event.status !== 'approved'}
+                    onClick={() => handleManageAttendance(event.id)}
                   >
-                    <Award className="h-4 w-4 mr-1" /> Leaderboard
+                    <Users className="h-4 w-4 mr-1" /> Attendance
                   </Button>
                   <Dialog>
                     <DialogTrigger asChild>

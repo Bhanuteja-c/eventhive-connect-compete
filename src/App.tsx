@@ -22,6 +22,7 @@ import EventDetail from "./pages/EventDetail";
 import PendingEvents from "./pages/PendingEvents";
 import SubmitEvent from "./pages/SubmitEvent";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
+import AttendanceManagement from "./pages/AttendanceManagement";
 
 const queryClient = new QueryClient();
 
@@ -74,6 +75,11 @@ const AppRoutes = () => {
       <Route path="/manage-events" element={
         <ProtectedRoute allowedRoles={['host', 'admin']}>
           <Layout><ManageEvents /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/manage-attendance/:eventId" element={
+        <ProtectedRoute allowedRoles={['host', 'admin']}>
+          <Layout><AttendanceManagement /></Layout>
         </ProtectedRoute>
       } />
       
