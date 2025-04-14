@@ -6,11 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { CalendarDays, MapPin, Users, Award, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/context/AuthContext';
 
 export default function EventDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, isAuthenticated } = useAuth();
   
   // In a real app, this would fetch event data from an API
   // For now, we'll use mock data
@@ -40,6 +42,25 @@ export default function EventDetail() {
       title: 'Registration Successful',
       description: `You've registered for ${event.title}. We'll send you further details by email.`,
     });
+  };
+
+  // Function to determine if registration button should be disabled
+  const isRegistrationDisabled = () => {
+    if (!isAuthenticated) return true;
+    if (!user) return true;
+    // Disable registration for admin and host roles
+    return user.role === 'admin' || user.role === 'host';
+  };
+  
+  // Get the registration button text based on user role and authentication
+  const getRegistrationButtonText = () => {
+    if (!isAuthenticated) {
+      return "Sign in to Register";
+    }
+    if (user && (user.role === 'admin' || user.role === 'host')) {
+      return `Registration not allowed for ${user.role}s`;
+    }
+    return "Register Now";
   };
   
   return (
@@ -131,9 +152,25 @@ export default function EventDetail() {
               <CardTitle className="text-lg">Registration</CardTitle>
             </CardHeader>
             <CardContent>
-              <Button onClick={handleRegister} className="w-full">
-                Register Now
+              <Button 
+                onClick={handleRegister} 
+                className="w-full" 
+                disabled={isRegistrationDisabled()}
+              >
+                {getRegistrationButtonText()}
               </Button>
+              {isAuthenticated && user && (user.role === 'admin' || user.role === 'host') && (
+                <p className="mt-2 text-sm text-orange-500 text-center">
+                  {user.role === 'admin' ? 'Administrators' : 'Hosts'} cannot register for events
+                </p>
+              )}
+              {!isAuthenticated && (
+                <p className="mt-2 text-sm text-muted-foreground text-center">
+                  <Button variant="link" className="p-0" onClick={() => navigate('/signin')}>
+                    Sign in
+                  </Button> to register for this event
+                </p>
+              )}
               <p className="mt-4 text-sm text-muted-foreground text-center">
                 Registration closes on {event.registrationDeadline}
               </p>
