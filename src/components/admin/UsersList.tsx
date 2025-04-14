@@ -62,12 +62,12 @@ export function UsersList() {
       const userList = profiles?.map((profile: ProfileData) => {
         const userRoleData = roles?.find((r: RoleData) => r.user_id === profile.id);
         
-        let userRole: UserRole = 'participant';
+        let userRole: UserRole = 'user';
         if (userRoleData) {
           const supabaseRole = userRoleData.role;
           if (supabaseRole === 'admin') userRole = 'admin';
           else if (supabaseRole === 'host') userRole = 'host';
-          // Supabase 'user' role maps to 'participant' in our app
+          // Supabase 'user' role maps to 'user' in our app
         }
         
         const email = `user-${profile.id.substring(0, 6)}@example.com`;

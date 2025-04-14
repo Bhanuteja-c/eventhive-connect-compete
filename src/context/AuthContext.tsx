@@ -136,10 +136,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Email already in use');
       }
       
-      // Map participant role to user for consistency
-      let role = userData.userType as UserRole;
-      if (role === 'participant') {
-        role = 'user';
+      // Map userType to role
+      let role: UserRole = 'user';
+      if (userData.userType === 'admin') {
+        role = 'admin';
+      } else if (userData.userType === 'host') {
+        role = 'host';
       }
       
       // Create new user
