@@ -119,7 +119,12 @@ export default function SubmitEvent() {
         imageUrl = publicUrlData.publicUrl;
       }
       
-      // Save event to database
+      // Save event to database - using the actual UUID string from user.id
+      // Make sure we have a valid UUID from user object before submitting
+      if (!user.id || typeof user.id !== 'string' || user.id.length !== 36) {
+        throw new Error('Invalid user ID format. Please sign in again.');
+      }
+      
       const { error: eventError } = await supabase
         .from('events')
         .insert({
