@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,24 +10,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { LoadingState } from '@/components/ui/loading-state';
 import { ArrowLeft, Save } from 'lucide-react';
+import { Database } from '@/integrations/supabase/types';
 
-interface Attendee {
-  id: string;
-  user_id: string;
-  attended: boolean;
-  marks?: number;
-  feedback?: string;
+type Attendee = Database['public']['Tables']['attendances']['Row'] & {
   profile: {
     full_name: string;
-  };
-}
+  }
+};
 
-interface EventDetails {
-  id: string;
-  title: string;
-  date: string;
-  location: string;
-}
+type EventDetails = Database['public']['Tables']['events']['Row'];
 
 export default function AttendanceManagement() {
   const { eventId } = useParams();
@@ -50,24 +40,19 @@ export default function AttendanceManagement() {
       // Fetch event details
       const { data: eventData, error: eventError } = await supabase
         .from('events')
-        .select('id, title, date, location')
+        .select('*')
         .eq('id', eventId)
         .single();
       
       if (eventError) throw eventError;
       setEventDetails(eventData);
       
-      // Since we can't directly query the attendances table with the Supabase client yet,
-      // we'll use a direct query to fetch attendances and related profile data
+      // Fetch attendances with profiles
       const { data: attendancesData, error: attendancesError } = await supabase
         .from('attendances')
         .select(`
-          id, 
-          user_id,
-          attended,
-          marks,
-          feedback,
-          profiles:user_id(full_name)
+          *,
+          profiles(full_name)
         `)
         .eq('event_id', eventId);
       
@@ -79,9 +64,12 @@ export default function AttendanceManagement() {
           {
             id: '1',
             user_id: '101',
+            event_id: eventId || '',
             attended: false,
-            marks: undefined,
-            feedback: '',
+            marks: null,
+            feedback: null,
+            created_at: null,
+            updated_at: null,
             profile: {
               full_name: 'Jane Doe'
             }
@@ -89,9 +77,12 @@ export default function AttendanceManagement() {
           {
             id: '2',
             user_id: '102',
+            event_id: eventId || '',
             attended: true,
             marks: 85,
             feedback: 'Good participation',
+            created_at: null,
+            updated_at: null,
             profile: {
               full_name: 'John Smith'
             }
@@ -101,11 +92,7 @@ export default function AttendanceManagement() {
       } else {
         // Transform the data to match our Attendee interface
         const formattedAttendees = attendancesData.map((item: any) => ({
-          id: item.id,
-          user_id: item.user_id,
-          attended: item.attended || false,
-          marks: item.marks,
-          feedback: item.feedback || '',
+          ...item,
           profile: {
             full_name: item.profiles?.full_name || 'Unknown User'
           }
@@ -121,31 +108,6 @@ export default function AttendanceManagement() {
         description: 'Failed to load attendees. Please try again.',
         variant: 'destructive',
       });
-      
-      // Set mock data for demo purposes
-      const mockAttendees: Attendee[] = [
-        {
-          id: '1',
-          user_id: '101',
-          attended: false,
-          marks: undefined,
-          feedback: '',
-          profile: {
-            full_name: 'Jane Doe'
-          }
-        },
-        {
-          id: '2',
-          user_id: '102',
-          attended: true,
-          marks: 85,
-          feedback: 'Good participation',
-          profile: {
-            full_name: 'John Smith'
-          }
-        }
-      ];
-      setAttendees(mockAttendees);
     } finally {
       setLoading(false);
     }
@@ -180,9 +142,8 @@ export default function AttendanceManagement() {
     try {
       setSaving(true);
       
-      // In a real implementation we would update each attendance record
+      // Update each attendance record
       for (const attendee of attendees) {
-        // Use update query directly on the attendances table
         const { error } = await supabase
           .from('attendances')
           .update({
