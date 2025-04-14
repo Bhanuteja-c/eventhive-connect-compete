@@ -57,14 +57,24 @@ export default function AttendanceManagement() {
       if (eventError) throw eventError;
       setEventDetails(eventData);
       
-      // Create a custom query to fetch attendances with profiles
-      // Since we can't use supabase.from('attendances'), we'll use a raw query approach
-      const { data, error } = await supabase
-        .rpc('get_attendances_with_profiles', { event_id_param: eventId });
+      // Since we can't directly query the attendances table with the Supabase client yet,
+      // we'll use a direct query to fetch attendances and related profile data
+      const { data: attendancesData, error: attendancesError } = await supabase
+        .from('attendances')
+        .select(`
+          id, 
+          user_id,
+          attended,
+          marks,
+          feedback,
+          profiles:user_id(full_name)
+        `)
+        .eq('event_id', eventId);
       
-      if (error) {
-        console.error('RPC error:', error);
-        // Fallback to mock data if RPC fails (since we're currently running in demo mode)
+      if (attendancesError) {
+        console.error('Error fetching attendances:', attendancesError);
+        
+        // Fallback to mock data if the query fails
         const mockAttendees: Attendee[] = [
           {
             id: '1',
@@ -89,7 +99,19 @@ export default function AttendanceManagement() {
         ];
         setAttendees(mockAttendees);
       } else {
-        setAttendees(data || []);
+        // Transform the data to match our Attendee interface
+        const formattedAttendees = attendancesData.map((item: any) => ({
+          id: item.id,
+          user_id: item.user_id,
+          attended: item.attended || false,
+          marks: item.marks,
+          feedback: item.feedback || '',
+          profile: {
+            full_name: item.profiles?.full_name || 'Unknown User'
+          }
+        }));
+        
+        setAttendees(formattedAttendees);
       }
       
     } catch (error) {
@@ -158,27 +180,28 @@ export default function AttendanceManagement() {
     try {
       setSaving(true);
       
-      // Since we can't directly access the attendances table in mock mode,
-      // we'll simulate a successful update
+      // In a real implementation we would update each attendance record
+      for (const attendee of attendees) {
+        // Use update query directly on the attendances table
+        const { error } = await supabase
+          .from('attendances')
+          .update({
+            attended: attendee.attended,
+            marks: attendee.marks,
+            feedback: attendee.feedback
+          })
+          .eq('id', attendee.id);
+          
+        if (error) {
+          console.error('Error updating attendance:', error);
+          throw error;
+        }
+      }
+      
       toast({
         title: 'Success',
         description: 'Attendance records have been updated.',
       });
-      
-      // In a real implementation with Supabase access to the attendances table:
-      /*
-      for (const attendee of attendees) {
-        const { error } = await supabase
-          .rpc('update_attendance', { 
-            attendance_id: attendee.id,
-            attended_val: attendee.attended,
-            marks_val: attendee.marks,
-            feedback_val: attendee.feedback
-          });
-        
-        if (error) throw error;
-      }
-      */
       
     } catch (error) {
       console.error('Error saving attendance:', error);
