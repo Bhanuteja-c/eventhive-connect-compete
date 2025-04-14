@@ -55,11 +55,21 @@ const mapRole = (role: string): UserRole => {
   }
 };
 
+// Generate a valid UUID v4 string for mock users
+const generateUUID = (): string => {
+  // RFC4122 compliant UUID v4 implementation
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0, 
+        v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 // Mock users for demonstration
 const mockUsers = [
-  { id: '1', name: 'Admin User', email: 'admin@eventhive.com', password: 'password', role: 'admin' as UserRole },
-  { id: '2', name: 'Host User', email: 'host@eventhive.com', password: 'password', role: 'host' as UserRole },
-  { id: '3', name: 'Participant User', email: 'user@eventhive.com', password: 'password', role: 'user' as UserRole },
+  { id: generateUUID(), name: 'Admin User', email: 'admin@eventhive.com', password: 'password', role: 'admin' as UserRole },
+  { id: generateUUID(), name: 'Host User', email: 'host@eventhive.com', password: 'password', role: 'host' as UserRole },
+  { id: generateUUID(), name: 'Participant User', email: 'user@eventhive.com', password: 'password', role: 'user' as UserRole },
 ];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -73,7 +83,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const storedUser = localStorage.getItem('eventhive_user');
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        // Validate the UUID format
+        if (parsedUser.id && typeof parsedUser.id === 'string' && parsedUser.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+          setUser(parsedUser);
+        } else {
+          // Fix the user ID by generating a valid UUID
+          const fixedUser = { ...parsedUser, id: generateUUID() };
+          setUser(fixedUser);
+          localStorage.setItem('eventhive_user', JSON.stringify(fixedUser));
+        }
       } catch (error) {
         console.error('Failed to parse stored user:', error);
         localStorage.removeItem('eventhive_user');
@@ -97,6 +116,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Remove password from user object before storing
       const { password: _, ...userWithoutPassword } = foundUser;
+      
+      // Ensure the user has a valid UUID format
+      if (!userWithoutPassword.id || typeof userWithoutPassword.id !== 'string' || !userWithoutPassword.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        userWithoutPassword.id = generateUUID();
+      }
       
       // Set user in state and localStorage
       setUser(userWithoutPassword);
@@ -144,9 +168,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role = 'host';
       }
       
-      // Create new user
+      // Create new user with a valid UUID
       const newUser: User = {
-        id: `${mockUsers.length + 1}`,
+        id: generateUUID(),
         name: userData.name,
         email: userData.email,
         role: role,
