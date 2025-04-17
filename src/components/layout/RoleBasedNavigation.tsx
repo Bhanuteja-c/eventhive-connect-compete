@@ -5,7 +5,7 @@ import {
   Settings, BarChart, Ticket, 
   Users, FileText, MessageSquare,
   PlusCircle, ClipboardCheck, Shield,
-  CheckCircle, Certificate, Clipboard
+  CheckCircle, Clipboard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserRole } from '@/types/auth';
