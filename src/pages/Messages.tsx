@@ -6,170 +6,30 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Send, User, Users } from 'lucide-react';
+import { Send, User } from 'lucide-react';
 import { format } from 'date-fns';
-
-interface Message {
-  id: string;
-  sender: {
-    id: string;
-    name: string;
-    avatar?: string;
-  };
-  content: string;
-  timestamp: string;
-  isRead: boolean;
-}
-
-interface Conversation {
-  id: string;
-  participant: {
-    id: string;
-    name: string;
-    avatar?: string;
-    isOnline: boolean;
-  };
-  lastMessage: {
-    content: string;
-    timestamp: string;
-    isRead: boolean;
-  };
-  unreadCount: number;
-}
+import { useMessages } from '@/hooks/useMessages';
+import { Message, Conversation } from '@/types/messages';
 
 export default function Messages() {
-  const [conversations, setConversations] = useState<Conversation[]>([
-    {
-      id: '1',
-      participant: {
-        id: 'user1',
-        name: 'John Doe',
-        avatar: undefined,
-        isOnline: true,
-      },
-      lastMessage: {
-        content: 'Looking forward to the event!',
-        timestamp: new Date(2025, 3, 15, 14, 30).toISOString(),
-        isRead: false,
-      },
-      unreadCount: 2,
-    },
-    {
-      id: '2',
-      participant: {
-        id: 'user2',
-        name: 'Jane Smith',
-        avatar: undefined,
-        isOnline: false,
-      },
-      lastMessage: {
-        content: 'Thanks for the invitation',
-        timestamp: new Date(2025, 3, 14, 9, 45).toISOString(),
-        isRead: true,
-      },
-      unreadCount: 0,
-    },
-    {
-      id: '3',
-      participant: {
-        id: 'user3',
-        name: 'Alice Brown',
-        avatar: undefined,
-        isOnline: true,
-      },
-      lastMessage: {
-        content: 'Will there be parking available?',
-        timestamp: new Date(2025, 3, 13, 18, 20).toISOString(),
-        isRead: true,
-      },
-      unreadCount: 0,
-    },
-  ]);
-
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'm1',
-      sender: { id: 'user1', name: 'John Doe' },
-      content: 'Hi there! I just registered for the Tech Conference.',
-      timestamp: new Date(2025, 3, 15, 12, 30).toISOString(),
-      isRead: true,
-    },
-    {
-      id: 'm2',
-      sender: { id: 'me', name: 'Me' },
-      content: 'Hello John! Thanks for registering. Is there anything specific you\'re looking forward to?',
-      timestamp: new Date(2025, 3, 15, 13, 45).toISOString(),
-      isRead: true,
-    },
-    {
-      id: 'm3',
-      sender: { id: 'user1', name: 'John Doe' },
-      content: 'Yes, I\'m really excited about the AI workshops. Looking forward to the event!',
-      timestamp: new Date(2025, 3, 15, 14, 30).toISOString(),
-      isRead: false,
-    },
-  ]);
-
-  const [selectedConversation, setSelectedConversation] = useState<string>('1');
+  const [selectedConversation, setSelectedConversation] = useState<string>('');
   const [newMessage, setNewMessage] = useState('');
+  const { messages, conversations, loading, sendMessage } = useMessages(selectedConversation);
   const { toast } = useToast();
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedConversation) return;
 
-    const timestamp = new Date().toISOString();
-    
-    // Add message to current conversation
-    setMessages(prev => [
-      ...prev,
-      {
-        id: `m${Date.now()}`,
-        sender: { id: 'me', name: 'Me' },
-        content: newMessage,
-        timestamp,
-        isRead: true,
-      }
-    ]);
-
-    // Update the conversation last message
-    setConversations(prev => 
-      prev.map(conv => 
-        conv.id === selectedConversation
-          ? {
-              ...conv,
-              lastMessage: {
-                content: newMessage,
-                timestamp,
-                isRead: true,
-              }
-            }
-          : conv
-      )
-    );
-
-    setNewMessage('');
-  };
-
-  const selectConversation = (id: string) => {
-    setSelectedConversation(id);
-    
-    // Mark all messages in this conversation as read
-    setMessages(prev => 
-      prev.map(msg => 
-        msg.sender.id !== 'me' && !msg.isRead
-          ? { ...msg, isRead: true }
-          : msg
-      )
-    );
-
-    // Clear unread count
-    setConversations(prev => 
-      prev.map(conv => 
-        conv.id === id
-          ? { ...conv, unreadCount: 0 }
-          : conv
-      )
-    );
+    try {
+      await sendMessage(newMessage, selectedConversation);
+      setNewMessage('');
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to send message',
+        variant: 'destructive',
+      });
+    }
   };
 
   const formatMessageTime = (timestamp: string) => {
@@ -213,17 +73,15 @@ export default function Messages() {
                     className={`flex items-start p-3 rounded-lg transition-colors cursor-pointer hover:bg-muted ${
                       selectedConversation === conversation.id ? 'bg-muted' : ''
                     }`}
-                    onClick={() => selectConversation(conversation.id)}
+                    onClick={() => setSelectedConversation(conversation.id)}
                   >
                     <div className="relative mr-3">
                       <Avatar>
                         <AvatarImage src={conversation.participant.avatar} />
-                        <AvatarFallback>
-                          {conversation.participant.name.charAt(0)}
-                        </AvatarFallback>
+                        <AvatarFallback>{conversation.participant.name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       {conversation.participant.isOnline && (
-                        <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background"></span>
+                        <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -328,7 +186,7 @@ export default function Messages() {
           ) : (
             <div className="flex-1 flex items-center justify-center p-6">
               <div className="text-center">
-                <Users className="h-12 w-12 mx-auto text-muted-foreground" />
+                <User className="h-12 w-12 mx-auto text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-medium">No conversation selected</h3>
                 <p className="text-muted-foreground mt-2">
                   Choose a conversation from the list to start messaging
