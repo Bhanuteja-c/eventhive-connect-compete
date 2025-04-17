@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -8,7 +7,7 @@ import {
   PlusCircle, ClipboardCheck, Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { UserRole } from '@/context/AuthContext';
+import { UserRole } from '@/types/auth';
 
 interface NavItem {
   title: string;
@@ -111,10 +110,8 @@ export function RoleBasedNavigation({
 }: RoleBasedNavigationProps) {
   const location = useLocation();
   
-  // Filter navigation items by role
   const filteredItems = navigationItems.filter(item => item.roles.includes(userRole));
 
-  // Default link class if not provided
   const defaultLinkClass = (isActive: boolean) => {
     const baseClass = "flex items-center p-3 rounded-md transition-colors";
     return isActive

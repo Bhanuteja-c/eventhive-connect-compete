@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadingState } from '@/components/ui/loading-state';
-import { UserRole } from '@/context/AuthContext';
+import { UserRole } from '@/types/auth';
 import { format } from 'date-fns';
 
 interface ProfileData {
