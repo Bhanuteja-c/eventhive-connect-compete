@@ -1,17 +1,16 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
 import { User } from 'lucide-react';
 import { useMessages } from '@/hooks/useMessages';
 import { ConversationList } from '@/components/messages/ConversationList';
 import { MessageList } from '@/components/messages/MessageList';
 import { MessageInput } from '@/components/messages/MessageInput';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Messages() {
   const [selectedConversation, setSelectedConversation] = useState<string>('');
-  const [newMessage, setNewMessage] = useState('');
   const { messages, conversations, loading, sendMessage } = useMessages(selectedConversation);
+  const [newMessage, setNewMessage] = useState('');
   const { toast } = useToast();
 
   const handleSendMessage = async () => {
