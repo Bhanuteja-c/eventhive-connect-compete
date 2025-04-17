@@ -23,6 +23,13 @@ import PendingEvents from "./pages/PendingEvents";
 import SubmitEvent from "./pages/SubmitEvent";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import AttendanceManagement from "./pages/AttendanceManagement";
+import Users from "./pages/Admin/Users";
+import Attendance from "./pages/Host/Attendance";
+import Certificates from "./pages/Host/Certificates";
+import MarkAttendance from "./pages/Host/MarkAttendance";
+import Reports from "./pages/Admin/Reports";
+import Messages from "./pages/Messages";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -61,7 +68,7 @@ const AppRoutes = () => {
       
       {/* Protected Routes */}
       <Route path="/profile" element={
-        <ProtectedRoute allowedRoles={['admin', 'host', 'participant']}>
+        <ProtectedRoute allowedRoles={['admin', 'host', 'user']}>
           <Layout><Profile /></Layout>
         </ProtectedRoute>
       } />
@@ -82,6 +89,21 @@ const AppRoutes = () => {
           <Layout><AttendanceManagement /></Layout>
         </ProtectedRoute>
       } />
+      <Route path="/attendance" element={
+        <ProtectedRoute allowedRoles={['host']}>
+          <Layout><Attendance /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/certificates" element={
+        <ProtectedRoute allowedRoles={['host']}>
+          <Layout><Certificates /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/mark-attendance" element={
+        <ProtectedRoute allowedRoles={['host']}>
+          <Layout><MarkAttendance /></Layout>
+        </ProtectedRoute>
+      } />
       
       {/* Admin Routes */}
       <Route path="/dashboard" element={
@@ -97,6 +119,28 @@ const AppRoutes = () => {
       <Route path="/pending-events" element={
         <ProtectedRoute allowedRoles={['admin']}>
           <Layout><PendingEvents /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/users" element={
+        <ProtectedRoute allowedRoles={['admin']}>
+          <Layout><Users /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/reports" element={
+        <ProtectedRoute allowedRoles={['admin']}>
+          <Layout><Reports /></Layout>
+        </ProtectedRoute>
+      } />
+      
+      {/* Common Protected Routes */}
+      <Route path="/messages" element={
+        <ProtectedRoute allowedRoles={['admin', 'host', 'user']}>
+          <Layout><Messages /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/settings" element={
+        <ProtectedRoute allowedRoles={['admin', 'host', 'user']}>
+          <Layout><Settings /></Layout>
         </ProtectedRoute>
       } />
       

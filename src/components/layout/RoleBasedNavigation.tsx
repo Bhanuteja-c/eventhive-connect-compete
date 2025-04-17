@@ -1,10 +1,12 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Home, Calendar, User, Award, 
   Settings, BarChart, Ticket, 
   Users, FileText, MessageSquare,
-  PlusCircle, ClipboardCheck, Shield
+  PlusCircle, ClipboardCheck, Shield,
+  CheckCircle, Certificate, Clipboard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserRole } from '@/types/auth';
@@ -76,6 +78,24 @@ export const navigationItems: NavItem[] = [
     icon: Users,
     path: '/users',
     roles: ['admin'],
+  },
+  {
+    title: 'Attendance',
+    icon: CheckCircle,
+    path: '/attendance',
+    roles: ['host'],
+  },
+  {
+    title: 'Certificates',
+    icon: Certificate,
+    path: '/certificates',
+    roles: ['host'],
+  },
+  {
+    title: 'Mark Attendance',
+    icon: Clipboard,
+    path: '/mark-attendance',
+    roles: ['host'],
   },
   {
     title: 'Reports',
