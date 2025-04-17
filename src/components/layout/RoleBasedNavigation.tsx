@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -87,7 +86,7 @@ export const navigationItems: NavItem[] = [
   },
   {
     title: 'Certificates',
-    icon: Certificate,
+    icon: FileText,
     path: '/certificates',
     roles: ['host'],
   },
