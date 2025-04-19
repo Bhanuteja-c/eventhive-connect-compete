@@ -20,7 +20,15 @@ export default function Events() {
     try {
       const { data, error } = await supabase
         .from('events')
-        .select('*')
+        .select(`
+          id,
+          title,
+          description,
+          date,
+          location,
+          participants,
+          image_url
+        `)
         .eq('status', 'approved')
         .order('date', { ascending: true });
         
