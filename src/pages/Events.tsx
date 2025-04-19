@@ -7,12 +7,14 @@ import { filterEvents } from '@/components/events/EventFilterLogic';
 import { BeeLoading } from '@/components/ui/bee-spinner';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Events() {
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
   
   useEffect(() => {
     fetchApprovedEvents();
@@ -20,6 +22,7 @@ export default function Events() {
   
   const fetchApprovedEvents = async () => {
     try {
+      console.log('Fetching approved events...');
       const { data, error } = await supabase
         .from('events')
         .select(`
@@ -35,10 +38,12 @@ export default function Events() {
         .order('date', { ascending: true });
         
       if (error) {
+        console.error('Supabase error:', error);
         throw error;
       }
       
       if (data) {
+        console.log('Fetched events:', data);
         const formattedEvents = data.map(event => ({
           id: event.id,
           title: event.title,

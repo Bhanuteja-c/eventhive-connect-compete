@@ -1,131 +1,78 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format } from 'date-fns';
 import { useForm } from 'react-hook-form';
-import { CalendarIcon, Upload, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
-import { LoadingState } from '@/components/ui/loading-state';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { CalendarIcon, LoaderCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
 
-// Define form validation schema
-const formSchema = z.object({
-  title: z.string().min(3, {
-    message: "Title must be at least 3 characters.",
-  }),
-  description: z.string().min(10, {
-    message: "Description must be at least 10 characters.",
-  }),
-  date: z.date({
-    required_error: "Event date is required.",
-  }),
-  location: z.string().min(3, {
-    message: "Location must be at least 3 characters.",
-  }),
+const eventSchema = z.object({
+  title: z.string().min(5, { message: 'Title must be at least 5 characters.' }),
+  description: z.string().min(20, { message: 'Description must be at least 20 characters.' }),
+  date: z.date({ required_error: 'Event date is required.' }),
+  location: z.string().min(3, { message: 'Location must be at least 3 characters.' }),
   criteria: z.string().optional(),
+  image_url: z.string().url({ message: 'Invalid URL format.' }).optional().or(z.literal('')),
 });
 
+type EventFormValues = z.infer<typeof eventSchema>;
+
 export default function SubmitEvent() {
-  const { toast } = useToast();
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { user } = useAuth();
+  const { toast } = useToast();
+  const { user, isAuthenticated } = useAuth();
   
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  // Redirect if not authenticated
+  React.useEffect(() => {
+    if (!isAuthenticated && !user) {
+      toast({
+        title: "Authentication required",
+        description: "You need to be logged in to submit an event.",
+        variant: "destructive",
+      });
+      navigate('/signin');
+    }
+  }, [isAuthenticated, user, navigate, toast]);
+
+  const form = useForm<EventFormValues>({
+    resolver: zodResolver(eventSchema),
     defaultValues: {
       title: '',
       description: '',
-      date: new Date(),
       location: '',
       criteria: '',
+      image_url: '',
     },
   });
-  
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setImageFile(file);
-      
-      // Create a preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-  
-  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+
+  const onSubmit = async (data: EventFormValues) => {
     if (!user) {
       toast({
         title: "Authentication required",
-        description: "Please sign in to submit an event.",
+        description: "You need to be logged in to submit an event.",
         variant: "destructive",
       });
       return;
     }
-
-    setLoading(true);
     
+    setSubmitting(true);
     try {
-      let imageUrl = null;
+      console.log("Submitting event with user_id:", user.id);
       
-      // Upload image if one was selected
-      if (imageFile) {
-        const fileExt = imageFile.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-        const filePath = `${fileName}`;
-        
-        // Check if event-images bucket exists, create if not
-        const { data: buckets } = await supabase.storage.listBuckets();
-        if (!buckets?.some(bucket => bucket.name === 'event-images')) {
-          const { error: bucketError } = await supabase.storage.createBucket('event-images', {
-            public: true
-          });
-          
-          if (bucketError) {
-            console.error('Error creating bucket:', bucketError);
-          }
-        }
-        
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('event-images')
-          .upload(filePath, imageFile);
-        
-        if (uploadError) {
-          throw new Error(`Image upload failed: ${uploadError.message}`);
-        }
-        
-        // Get the public URL
-        const { data: publicUrlData } = supabase.storage
-          .from('event-images')
-          .getPublicUrl(filePath);
-          
-        imageUrl = publicUrlData.publicUrl;
-      }
-      
-      // Save event to database - using the actual UUID string from user.id
-      // Make sure we have a valid UUID from user object before submitting
-      if (!user.id || typeof user.id !== 'string' || user.id.length !== 36) {
-        throw new Error('Invalid user ID format. Please sign in again.');
-      }
-      
-      const { error: eventError } = await supabase
+      const { error } = await supabase
         .from('events')
         .insert({
           title: data.title,
@@ -133,48 +80,47 @@ export default function SubmitEvent() {
           date: data.date.toISOString(),
           location: data.location,
           criteria: data.criteria || null,
-          image_url: imageUrl,
+          image_url: data.image_url || null,
           user_id: user.id,
-          status: 'pending',
-          participants: 0
+          status: 'pending'
         });
-      
-      if (eventError) {
-        throw new Error(`Failed to submit event: ${eventError.message}`);
+
+      if (error) {
+        console.error("Error submitting event:", error);
+        throw error;
       }
-      
-      // Show success toast
+
       toast({
-        title: 'Event submitted successfully',
-        description: 'Your event has been submitted for approval and is under review.',
+        title: "Event submitted successfully",
+        description: "Your event has been submitted and is pending approval.",
       });
       
-      // Redirect to manage events
-      setTimeout(() => {
-        navigate('/manage-events');
-      }, 1000);
-    } catch (error) {
-      console.error('Error submitting event:', error);
+      navigate('/manage-events');
+    } catch (error: any) {
+      console.error("Failed to submit event:", error);
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to submit event. Please try again.',
-        variant: 'destructive',
+        title: "Failed to submit event",
+        description: error.message || "An unexpected error occurred. Please try again.",
+        variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
-  
+
+  if (!isAuthenticated || !user) {
+    return null; // Don't render anything if not authenticated
+  }
+
   return (
-    <div className="max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Submit a New Event</h1>
+    <div className="container max-w-3xl py-8">
+      <h1 className="text-3xl font-bold mb-8">Submit New Event</h1>
       
       <Card>
         <CardHeader>
           <CardTitle>Event Details</CardTitle>
           <CardDescription>
             Fill out the form below to submit your event for approval.
-            An administrator will review your submission.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -189,6 +135,9 @@ export default function SubmitEvent() {
                     <FormControl>
                       <Input placeholder="Enter event title" {...field} />
                     </FormControl>
+                    <FormDescription>
+                      Choose a clear and descriptive title for your event.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -199,14 +148,17 @@ export default function SubmitEvent() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>Event Description</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Provide a detailed description of your event" 
-                        className="min-h-[120px]"
+                        placeholder="Describe your event in detail" 
+                        className="min-h-[120px]" 
                         {...field} 
                       />
                     </FormControl>
+                    <FormDescription>
+                      Include important details about your event.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -243,11 +195,16 @@ export default function SubmitEvent() {
                             mode="single"
                             selected={field.value}
                             onSelect={field.onChange}
-                            disabled={(date) => date < new Date()}
+                            disabled={(date) =>
+                              date < new Date(new Date().setHours(0, 0, 0, 0))
+                            }
                             initialFocus
                           />
                         </PopoverContent>
                       </Popover>
+                      <FormDescription>
+                        Select the date when your event will take place.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -258,10 +215,13 @@ export default function SubmitEvent() {
                   name="location"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Location</FormLabel>
+                      <FormLabel>Event Location</FormLabel>
                       <FormControl>
                         <Input placeholder="Enter event location" {...field} />
                       </FormControl>
+                      <FormDescription>
+                        Specify where your event will be held.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -273,87 +233,59 @@ export default function SubmitEvent() {
                 name="criteria"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Participation Criteria</FormLabel>
+                    <FormLabel>Participation Criteria (Optional)</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Specify any requirements or criteria for participants" 
-                        className="min-h-[100px]"
+                        placeholder="Specify any requirements for participants" 
                         {...field} 
                       />
                     </FormControl>
+                    <FormDescription>
+                      Describe any specific requirements or criteria for event participants.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               
-              <div>
-                <FormLabel htmlFor="event-image">Event Banner (Optional)</FormLabel>
-                <input
-                  id="event-image"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  ref={fileInputRef}
-                  className="hidden"
-                />
-                
-                <div 
-                  className={cn(
-                    "mt-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-6 text-center",
-                    imagePreview ? "bg-gray-50 dark:bg-gray-800/50" : ""
-                  )}
-                >
-                  {imagePreview ? (
-                    <div className="space-y-2">
-                      <img src={imagePreview} alt="Preview" className="mx-auto h-40 object-cover rounded-md" />
-                      <div>
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => {
-                            setImageFile(null);
-                            setImagePreview(null);
-                            if (fileInputRef.current) fileInputRef.current.value = '';
-                          }}
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                      <div className="mt-2">
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => fileInputRef.current?.click()}
-                        >
-                          Choose file
-                        </Button>
-                      </div>
-                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        PNG, JPG, GIF or WEBP up to 5MB
-                      </p>
-                    </>
-                  )}
-                </div>
-              </div>
+              <FormField
+                control={form.control}
+                name="image_url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Event Image URL (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://example.com/image.jpg" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Provide a direct URL to an image for your event.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
-              <div className="pt-4 border-t">
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? (
+              <CardFooter className="px-0 pt-6 flex justify-end">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="mr-2"
+                  onClick={() => navigate('/manage-events')}
+                  disabled={submitting}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
                       Submitting...
                     </>
                   ) : (
-                    'Submit Event for Approval'
+                    'Submit Event'
                   )}
                 </Button>
-              </div>
+              </CardFooter>
             </form>
           </Form>
         </CardContent>
