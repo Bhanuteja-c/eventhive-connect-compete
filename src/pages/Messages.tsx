@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User } from 'lucide-react';
@@ -10,15 +11,13 @@ import { useToast } from '@/hooks/use-toast';
 export default function Messages() {
   const [selectedConversation, setSelectedConversation] = useState<string>('');
   const { messages, conversations, loading, sendMessage } = useMessages(selectedConversation);
-  const [newMessage, setNewMessage] = useState('');
   const { toast } = useToast();
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation) return;
+  const handleSendMessage = async (content: string) => {
+    if (!content.trim() || !selectedConversation) return;
 
     try {
-      await sendMessage(newMessage, selectedConversation);
-      setNewMessage('');
+      await sendMessage(content, selectedConversation);
     } catch (error) {
       toast({
         title: 'Error',
@@ -57,11 +56,7 @@ export default function Messages() {
               
               <CardContent className="flex-1 p-0 flex flex-col">
                 <MessageList messages={messages} />
-                <MessageInput 
-                  value={newMessage}
-                  onChange={setNewMessage}
-                  onSend={handleSendMessage}
-                />
+                <MessageInput onSend={handleSendMessage} />
               </CardContent>
             </>
           ) : (
