@@ -1,5 +1,6 @@
 
-import { Event, EventCard } from '@/components/EventCard';
+import { Event } from '@/types/event';
+import { EventCard } from '@/components/EventCard';
 
 interface EventListProps {
   events: Event[];

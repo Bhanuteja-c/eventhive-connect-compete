@@ -1,5 +1,5 @@
 
-import { Event } from '@/components/EventCard';
+import { Event } from '@/types/event';
 
 interface FilterConfig {
   search?: string;

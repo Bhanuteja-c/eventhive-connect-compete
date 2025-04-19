@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Event } from './EventCard';
+import { Event } from '@/types/event';
 import { Link } from 'react-router-dom';
 
 interface FeaturedEventCarouselProps {

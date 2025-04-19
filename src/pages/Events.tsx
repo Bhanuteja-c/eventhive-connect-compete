@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { EventFilter } from '@/components/EventFilter';
-import { Event } from '@/components/EventCard';
+import { Event } from '@/types/event';
 import { EventList } from '@/components/events/EventList';
 import { filterEvents } from '@/components/events/EventFilterLogic';
 import { BeeLoading } from '@/components/ui/bee-spinner';
